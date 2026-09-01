@@ -1,0 +1,43 @@
+name: Import DS4 header assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'imports/ds4/**'
+      - '.github/workflows/import-ds4-assets.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import exact DS4 header assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=7
+          actual=$(find imports/ds4 -maxdepth 1 -name 'chunk-*.b64' | wc -l)
+          if [ "$actual" -ne "$expected" ]; then
+            echo "Waiting for all chunks: $actual/$expected"
+            exit 0
+          fi
+          cat imports/ds4/chunk-*.b64 | base64 -d > /tmp/ds4_headers.zip
+          rm -rf ebay/headers/ds4-current
+          mkdir -p ebay/headers/ds4-current
+          unzip -j -o /tmp/ds4_headers.zip -d ebay/headers/ds4-current
+          file ebay/headers/ds4-current/*.png
+          sha256sum ebay/headers/ds4-current/*.png
+          git config user.name 'DS4 Asset Import'
+          git config user.email 'actions@users.noreply.github.com'
+          git add ebay/headers/ds4-current/*.png
+          if git diff --cached --quiet; then
+            echo 'No DS4 asset changes to commit.'
+          else
+            git commit -m 'Import current DS4 eBay header assets'
+            git push origin HEAD:main
+          fi
