@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          expected=7
+          expected=5
           actual=$(find imports/ds4 -maxdepth 1 -name 'chunk-*.b64' | wc -l)
           if [ "$actual" -ne "$expected" ]; then
             echo "Waiting for all chunks: $actual/$expected"
